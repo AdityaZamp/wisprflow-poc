@@ -30,7 +30,6 @@ import { HelpCircle, Settings, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface WebSocketConfig {
-  access_token: string;
   language: string;
   context: {
     app: {
@@ -76,7 +75,6 @@ interface ConfigModalProps {
 
 const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
   const [config, setConfig] = useState<WebSocketConfig>({
-    access_token: "",
     language: "en",
     context: {
       app: {
@@ -209,26 +207,6 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-white">Authentication</h3>
             <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <FieldLabel
-                  htmlFor="access_token"
-                  tooltip="Your WisprFlow API access token for authentication. This is required to connect to the WebSocket API."
-                >
-                  Access Token
-                </FieldLabel>
-                <Input
-                  id="access_token"
-                  value={config.access_token}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      access_token: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter your access token"
-                  className="text-white placeholder-gray-400"
-                />
-              </div>
               <div className="space-y-2">
                 <FieldLabel
                   htmlFor="language"
@@ -741,7 +719,7 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
                           dictionary_context: parsed,
                         },
                       }));
-                    } catch (error) {
+                    } catch {
                       // Invalid JSON, keep the text but don't update the config
                     }
                   }}
@@ -879,7 +857,7 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
                           conversation: parsed,
                         },
                       }));
-                    } catch (error) {
+                    } catch {
                       // Invalid JSON, keep the text but don't update the config
                     }
                   }}
@@ -889,7 +867,8 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
                 />
                 <p className="text-xs text-gray-400">
                   Required fields: id (string), participants (string[]),
-                  messages (array with role: "user"|"human"|"assistant" and
+                  messages (array with role:
+                  &quot;user&quot;|&quot;human&quot;|&quot;assistant&quot; and
                   content: string)
                 </p>
               </div>

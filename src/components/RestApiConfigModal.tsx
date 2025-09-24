@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -151,26 +150,6 @@ const RestApiConfigModal = ({
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-white">Authentication</h3>
             <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <FieldLabel
-                  htmlFor="access_token"
-                  tooltip="Your WisprFlow API access token for authentication. This is required to make REST API requests."
-                >
-                  Access Token
-                </FieldLabel>
-                <Input
-                  id="access_token"
-                  value={config.access_token}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      access_token: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter your access token"
-                  className="text-white placeholder-gray-400"
-                />
-              </div>
               <div className="space-y-2">
                 <FieldLabel
                   htmlFor="language"
@@ -467,7 +446,7 @@ const RestApiConfigModal = ({
                           dictionary_context: parsed,
                         },
                       }));
-                    } catch (error) {
+                    } catch {
                       // Invalid JSON, keep the text but don't update the config
                     }
                   }}

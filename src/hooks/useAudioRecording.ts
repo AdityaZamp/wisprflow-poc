@@ -14,7 +14,6 @@ interface AudioRecordingState {
 }
 
 interface WebSocketConfig {
-  access_token: string;
   language: string;
   context: {
     app: {
@@ -199,66 +198,85 @@ export const useAudioRecording = (
     [processAudioData]
   );
 
-  const connectWebSocket = useCallback(() => {
+  const connectWebSocket = useCallback(async () => {
     if (websocketRef.current) websocketRef.current.close();
 
-    const apiKey = process.env.NEXT_PUBLIC_WISPRFLOW_ACCESS_TOKEN || "";
-    websocketRef.current = new WebSocket(
-      `wss://platform-api.wisprflow.ai/api/v1/dash/ws?api_key=Bearer%20${apiKey}`
-    );
+    try {
+      // Fetch the token from our secure API route
+      const response = await fetch("/api/websocket/token");
+      const data = await response.json();
 
-    websocketRef.current.onopen = () => {
-      updateState({ isConnected: true, status: "Connected to WebSocket" });
-
-      websocketRef.current?.send(
-        JSON.stringify({
-          type: "auth",
-          access_token: apiKey,
-          language: [wsConfig.language], // Convert single string to array
-          context: wsConfig.context,
-        })
-      );
-    };
-
-    websocketRef.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log(`Received message: ${JSON.stringify(message)}`);
-
-      if (message.status === "auth") {
-        updateState({
-          isAuthenticated: true,
-          status: "Authenticated, ready to stream",
-        });
-      } else if (message.status === "info") {
-        const info = message.message;
-        updateState({ status: info.event });
-      } else if (message.status === "text") {
-        if (message.body.text) {
-          updateState({ transcript: message.body.text });
-        }
-      } else if (message.error) {
-        console.error("WebSocket error:", message.error);
-        updateState({
-          error: message.error,
-          status: `Error: ${message.error}`,
-        });
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get token");
       }
-    };
 
-    websocketRef.current.onclose = () => {
-      updateState({
-        isConnected: false,
-        status: "WebSocket connection closed",
-      });
-    };
+      const apiKey = data.token;
+      websocketRef.current = new WebSocket(
+        `wss://platform-api.wisprflow.ai/api/v1/dash/ws?api_key=Bearer%20${apiKey}`
+      );
 
-    websocketRef.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      websocketRef.current.onopen = () => {
+        updateState({ isConnected: true, status: "Connected to WebSocket" });
+
+        websocketRef.current?.send(
+          JSON.stringify({
+            type: "auth",
+            access_token: apiKey,
+            language: [wsConfig.language], // Convert single string to array
+            context: wsConfig.context,
+          })
+        );
+      };
+
+      websocketRef.current.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log(`Received message: ${JSON.stringify(message)}`);
+
+        if (message.status === "auth") {
+          updateState({
+            isAuthenticated: true,
+            status: "Authenticated, ready to stream",
+          });
+        } else if (message.status === "info") {
+          const info = message.message;
+          updateState({ status: info.event });
+        } else if (message.status === "text") {
+          if (message.body.text) {
+            updateState({ transcript: message.body.text });
+          }
+        } else if (message.error) {
+          console.error("WebSocket error:", message.error);
+          updateState({
+            error: message.error,
+            status: `Error: ${message.error}`,
+          });
+        }
+      };
+
+      websocketRef.current.onclose = () => {
+        updateState({
+          isConnected: false,
+          status: "WebSocket connection closed",
+        });
+      };
+
+      websocketRef.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        updateState({
+          error: "WebSocket encountered an error",
+          status: "Error: WebSocket encountered an error",
+        });
+      };
+    } catch (error) {
+      console.error("Error connecting to WebSocket:", error);
       updateState({
-        error: "WebSocket encountered an error",
-        status: "Error: WebSocket encountered an error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect to WebSocket",
+        status: "Error: Failed to connect",
       });
-    };
+    }
   }, [updateState, wsConfig]);
 
   const startRecording = useCallback(async () => {

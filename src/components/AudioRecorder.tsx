@@ -17,7 +17,6 @@ interface ChatMessage {
 }
 
 interface WebSocketConfig {
-  access_token: string;
   language: string;
   context: {
     app: {
@@ -57,7 +56,7 @@ const Waveform = ({ volume }: { volume: number }) => {
     if (!containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const width = entry.contentRect.width;
         // Each bar ~6px wide (4px bar + 2px gap)
         const count = Math.floor(width / 6);
@@ -119,7 +118,6 @@ const Waveform = ({ volume }: { volume: number }) => {
 
 const AudioRecorder = () => {
   const [wsConfig, setWsConfig] = useState<WebSocketConfig>({
-    access_token: process.env.NEXT_PUBLIC_WISPRFLOW_ACCESS_TOKEN || "",
     language: "en",
     context: {
       app: {

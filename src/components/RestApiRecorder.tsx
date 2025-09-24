@@ -47,7 +47,7 @@ const Waveform = ({ volume }: { volume: number }) => {
     if (!containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const width = entry.contentRect.width;
         // Each bar ~6px wide (4px bar + 2px gap)
         const count = Math.floor(width / 6);
@@ -341,21 +341,17 @@ const RestApiRecorder = () => {
       setError(null);
 
       const startTime = performance.now();
-      const response = await fetch(
-        "https://platform-api.wisprflow.ai/api/v1/dash/api",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_WISPRFLOW_ACCESS_TOKEN}`,
-          },
-          body: JSON.stringify({
-            audio: base64Audio,
-            language: config.language,
-            context: config.context,
-          }),
-        }
-      );
+      const response = await fetch("/api/audio/transcribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audio: base64Audio,
+          language: config.language,
+          context: config.context,
+        }),
+      });
 
       const duration = (performance.now() - startTime) / 1000;
       setApiDuration(duration);
