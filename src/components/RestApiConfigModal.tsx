@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -24,28 +25,46 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HelpCircle, Settings } from "lucide-react";
-import { useState } from "react";
+import { HelpCircle, Settings, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 interface RestApiConfig {
-  access_token: string;
-  language: string[];
+  language: string;
   context: {
     app: {
+      name: string;
       type: string;
     };
     dictionary_context: string[];
+    user_identifier?: string;
+    user_first_name?: string;
+    user_last_name?: string;
     textbox_contents: {
       before_text: string;
       selected_text: string;
       after_text: string;
     };
+    screenshot?: string | null;
+    content_text?: string | null;
+    content_html?: string | null;
+    conversation?: {
+      id: string;
+      participants: string[];
+      messages: {
+        role: "user" | "human" | "assistant";
+        content: string;
+      }[];
+    };
   };
 }
 
 interface ContextSelection {
+  user_info: boolean;
   textbox_contents: boolean;
+  content_fields: boolean;
   dictionary_context: boolean;
+  screenshot: boolean;
+  conversation: boolean;
 }
 
 interface RestApiConfigModalProps {
@@ -57,12 +76,42 @@ const RestApiConfigModal = ({
   onConfigChange,
   currentConfig,
 }: RestApiConfigModalProps) => {
-  const [config, setConfig] = useState<RestApiConfig>(currentConfig);
+  const [config, setConfig] = useState<RestApiConfig>({
+    language: "en",
+    context: {
+      app: {
+        name: "Weather Forecast Chatbot",
+        type: "ai",
+      },
+      dictionary_context: [],
+      user_identifier: "john_doe_1",
+      user_first_name: "John",
+      user_last_name: "Doe",
+      textbox_contents: {
+        before_text: "",
+        selected_text: "",
+        after_text: "",
+      },
+      screenshot: null,
+      content_text: null,
+      content_html: null,
+      conversation: {
+        id: "",
+        participants: [],
+        messages: [],
+      },
+    },
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [contextSelection, setContextSelection] = useState<ContextSelection>({
+    user_info: true,
     textbox_contents: true,
+    content_fields: false,
     dictionary_context: false,
+    screenshot: false,
+    conversation: false,
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onConfigChange(config);
@@ -83,8 +132,26 @@ const RestApiConfigModal = ({
   const handleLanguageChange = (value: string) => {
     setConfig((prev) => ({
       ...prev,
-      language: [value],
+      language: value,
     }));
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setConfig((prev) => ({
+          ...prev,
+          context: {
+            ...prev.context,
+            screenshot: result,
+          },
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const FieldLabel = ({
@@ -137,12 +204,10 @@ const RestApiConfigModal = ({
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-[#212121] border-gray-700">
             <DialogHeader className="p-6 pb-4 border-b border-gray-700">
-              <DialogTitle className="text-white">
-                REST API Configuration
-              </DialogTitle>
+              <DialogTitle className="text-white">Configuration</DialogTitle>
               <DialogDescription className="mt-2 text-gray-300">
-                Configure the authentication and context parameters for the REST
-                API requests.
+                Configure the authentication and context parameters for the API
+                requests.
               </DialogDescription>
             </DialogHeader>
 
@@ -156,12 +221,12 @@ const RestApiConfigModal = ({
                   <div className="space-y-2">
                     <FieldLabel
                       htmlFor="language"
-                      tooltip="Language code that the user is expected to speak. Setting this forces the transcription into the specified language."
+                      tooltip="Optional ISO 639-1 language code that the user is expected to speak. Setting this forces the transcription into the specified language. Not providing an input attempts autodetection on full list of languages (less accurate)."
                     >
                       Language (ISO 639-1 Code)
                     </FieldLabel>
                     <Select
-                      value={config.language[0] || "en"}
+                      value={config.language}
                       onValueChange={handleLanguageChange}
                     >
                       <SelectTrigger className="cursor-pointer text-white bg-[#303030] border-gray-600 hover:bg-gray-700">
@@ -241,9 +306,22 @@ const RestApiConfigModal = ({
                   Context Selection
                 </h3>
                 <p className="text-sm text-gray-300">
-                  Choose which context fields to include in the REST API request
+                  Choose which context fields to include in the API request
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="user_info"
+                      checked={contextSelection.user_info}
+                      onCheckedChange={() => handleContextToggle("user_info")}
+                    />
+                    <Label
+                      htmlFor="user_info"
+                      className="text-sm font-medium text-white"
+                    >
+                      User Information
+                    </Label>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="textbox_contents"
@@ -261,6 +339,21 @@ const RestApiConfigModal = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
+                      id="content_fields"
+                      checked={contextSelection.content_fields}
+                      onCheckedChange={() =>
+                        handleContextToggle("content_fields")
+                      }
+                    />
+                    <Label
+                      htmlFor="content_fields"
+                      className="text-sm font-medium text-white"
+                    >
+                      Content Fields
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
                       id="dictionary_context"
                       checked={contextSelection.dictionary_context}
                       onCheckedChange={() =>
@@ -274,6 +367,34 @@ const RestApiConfigModal = ({
                       Dictionary Context
                     </Label>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="screenshot"
+                      checked={contextSelection.screenshot}
+                      onCheckedChange={() => handleContextToggle("screenshot")}
+                    />
+                    <Label
+                      htmlFor="screenshot"
+                      className="text-sm font-medium text-white"
+                    >
+                      Screenshot
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="conversation"
+                      checked={contextSelection.conversation}
+                      onCheckedChange={() =>
+                        handleContextToggle("conversation")
+                      }
+                    />
+                    <Label
+                      htmlFor="conversation"
+                      className="text-sm font-medium text-white"
+                    >
+                      Conversation
+                    </Label>
+                  </div>
                 </div>
               </div>
 
@@ -283,6 +404,29 @@ const RestApiConfigModal = ({
                   App Configuration
                 </h3>
                 <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-2">
+                    <FieldLabel
+                      htmlFor="app_name"
+                      tooltip="The name of the application the user is dictating into, used to customize the writing style."
+                    >
+                      App Name
+                    </FieldLabel>
+                    <Input
+                      id="app_name"
+                      value={config.context.app.name}
+                      onChange={(e) =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          context: {
+                            ...prev.context,
+                            app: { ...prev.context.app, name: e.target.value },
+                          },
+                        }))
+                      }
+                      placeholder="Enter app name"
+                      className="text-white placeholder-gray-400"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <FieldLabel
                       htmlFor="app_type"
@@ -328,6 +472,86 @@ const RestApiConfigModal = ({
                   </div>
                 </div>
               </div>
+
+              {/* User Information */}
+              {contextSelection.user_info && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-white">
+                    User Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <FieldLabel
+                        htmlFor="user_identifier"
+                        tooltip="User ID in the app that the person is dictating in, like their email address in an email client application."
+                      >
+                        User Identifier
+                      </FieldLabel>
+                      <Input
+                        id="user_identifier"
+                        value={config.context.user_identifier || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              user_identifier: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter user identifier"
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FieldLabel
+                        htmlFor="user_first_name"
+                        tooltip="First name of the speaker, used to make sure Flow spells the speaker's name correctly."
+                      >
+                        First Name
+                      </FieldLabel>
+                      <Input
+                        id="user_first_name"
+                        value={config.context.user_first_name || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              user_first_name: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter first name"
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                      <FieldLabel
+                        htmlFor="user_last_name"
+                        tooltip="Last name of the speaker, used to make sure Flow spells the speaker's name correctly."
+                      >
+                        Last Name
+                      </FieldLabel>
+                      <Input
+                        id="user_last_name"
+                        value={config.context.user_last_name || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              user_last_name: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter last name"
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Textbox Contents */}
               {contextSelection.textbox_contents && (
@@ -421,6 +645,63 @@ const RestApiConfigModal = ({
                 </div>
               )}
 
+              {/* Content Fields */}
+              {contextSelection.content_fields && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-white">Content</h3>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <FieldLabel
+                        htmlFor="content_text"
+                        tooltip="Plaintext content of the current page in the app user is dictating in. This is a more efficient way of providing context compared to screenshot."
+                      >
+                        Content Text
+                      </FieldLabel>
+                      <Textarea
+                        id="content_text"
+                        value={config.context.content_text || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              content_text: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Additional text content"
+                        rows={3}
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FieldLabel
+                        htmlFor="content_html"
+                        tooltip="HTML content of the app user is dictating in (a more feature-rich alternative to content_text)."
+                      >
+                        Content HTML
+                      </FieldLabel>
+                      <Textarea
+                        id="content_html"
+                        value={config.context.content_html || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              content_html: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="HTML content"
+                        rows={3}
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Dictionary Context */}
               {contextSelection.dictionary_context && (
                 <div className="space-y-6">
@@ -462,6 +743,154 @@ const RestApiConfigModal = ({
                   </div>
                 </div>
               )}
+
+              {/* Screenshot */}
+              {contextSelection.screenshot && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-white">
+                    Screenshot
+                  </h3>
+                  <div className="space-y-4">
+                    <FieldLabel
+                      htmlFor="screenshot"
+                      tooltip="Screenshot of the screen or the app the user is dictating in, for when the user is referencing something on the screen. Upload an image to convert it to base64."
+                    >
+                      Screenshot (Base64 or URL)
+                    </FieldLabel>
+
+                    {/* Image Upload Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 cursor-pointer text-white border-gray-600 hover:bg-gray-700"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Upload Image
+                        </Button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        {config.context.screenshot && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              setConfig((prev) => ({
+                                ...prev,
+                                context: {
+                                  ...prev.context,
+                                  screenshot: null,
+                                },
+                              }))
+                            }
+                            className="flex items-center gap-2 cursor-pointer text-white border-gray-600 hover:bg-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Image Preview */}
+                      {config.context.screenshot && (
+                        <div className="space-y-2">
+                          <div className="relative max-w-xs">
+                            <img
+                              src={config.context.screenshot}
+                              alt="Screenshot preview"
+                              className="w-full h-auto rounded border"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Image converted to base64 format
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manual Input */}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="screenshot_manual"
+                        className="text-sm font-medium text-white"
+                      >
+                        Or enter manually (Base64 or URL):
+                      </Label>
+                      <Textarea
+                        id="screenshot_manual"
+                        value={config.context.screenshot || ""}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              screenshot: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter screenshot data or URL"
+                        rows={3}
+                        className="text-white placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Conversation */}
+              {contextSelection.conversation && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-white">
+                    Conversation
+                  </h3>
+                  <div className="space-y-2">
+                    <FieldLabel
+                      htmlFor="conversation"
+                      tooltip="Chatbot style history of the conversation the user is dictating in. This typically applies to messaging and AI apps. Must include id, participants array, and messages array with role and content."
+                    >
+                      Conversation (JSON)
+                    </FieldLabel>
+                    <Textarea
+                      id="conversation"
+                      value={JSON.stringify(
+                        config.context.conversation || {},
+                        null,
+                        2
+                      )}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          setConfig((prev) => ({
+                            ...prev,
+                            context: {
+                              ...prev.context,
+                              conversation: parsed,
+                            },
+                          }));
+                        } catch {
+                          // Invalid JSON, keep the text but don't update the config
+                        }
+                      }}
+                      placeholder='{"id": "conversation_id", "participants": ["user1", "user2"], "messages": [{"role": "user", "content": "Hello"}]}'
+                      rows={4}
+                      className="text-white placeholder-gray-400"
+                    />
+                    <p className="text-xs text-gray-400">
+                      Required fields: id (string), participants (string[]),
+                      messages (array with role:
+                      &quot;user&quot;|&quot;human&quot;|&quot;assistant&quot;
+                      and content: string)
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-3 p-6 pt-4 border-t border-gray-700 bg-[#212121]">
@@ -474,7 +903,7 @@ const RestApiConfigModal = ({
               </Button>
               <Button
                 onClick={handleSave}
-                className="cursor-pointer bg-green-500 hover:bg-green-600 text-white font-medium"
+                className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-medium"
               >
                 Save Configuration
               </Button>

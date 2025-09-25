@@ -194,12 +194,10 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-[#212121] border-gray-700">
             <DialogHeader className="p-6 pb-4 border-b border-gray-700">
-              <DialogTitle className="text-white">
-                WebSocket Configuration
-              </DialogTitle>
+              <DialogTitle className="text-white">Configuration</DialogTitle>
               <DialogDescription className="mt-2 text-gray-300">
-                Configure the authentication and context parameters for the
-                WebSocket connection.
+                Configure the authentication and context parameters for the API
+                requests.
               </DialogDescription>
             </DialogHeader>
 
@@ -303,8 +301,7 @@ const ConfigModal = ({ onConfigChange, currentConfig }: ConfigModalProps) => {
                   Context Selection
                 </h3>
                 <p className="text-sm text-gray-300">
-                  Choose which context fields to include in the WebSocket
-                  message
+                  Choose which context fields to include in the API request
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
