@@ -14,9 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WisprFlow Audio Recording",
-  description:
-    "Real-time audio recording and transcription with WebSocket streaming",
+  title: "WisprFlow Speech to Text POC",
+  description: "Real-time speech to text with WebSocket and REST API",
 };
 
 export default function RootLayout({
