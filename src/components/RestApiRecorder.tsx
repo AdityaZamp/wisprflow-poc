@@ -22,17 +22,31 @@ interface ChatMessage {
 }
 
 interface RestApiConfig {
-  access_token: string;
-  language: string[];
+  language: string;
   context: {
     app: {
+      name: string;
       type: string;
     };
     dictionary_context: string[];
+    user_identifier?: string;
+    user_first_name?: string;
+    user_last_name?: string;
     textbox_contents: {
       before_text: string;
       selected_text: string;
       after_text: string;
+    };
+    screenshot?: string | null;
+    content_text?: string | null;
+    content_html?: string | null;
+    conversation?: {
+      id: string;
+      participants: string[];
+      messages: {
+        role: "user" | "human" | "assistant";
+        content: string;
+      }[];
     };
   };
 }
@@ -109,17 +123,28 @@ const Waveform = ({ volume }: { volume: number }) => {
 
 const RestApiRecorder = () => {
   const [config, setConfig] = useState<RestApiConfig>({
-    access_token: "",
-    language: ["en"],
+    language: "en",
     context: {
       app: {
-        type: "email",
+        name: "WisprFlow POC",
+        type: "ai",
       },
       dictionary_context: [],
+      user_identifier: "john_doe_1",
+      user_first_name: "John",
+      user_last_name: "Doe",
       textbox_contents: {
         before_text: "",
         selected_text: "",
         after_text: "",
+      },
+      screenshot: null,
+      content_text: null,
+      content_html: null,
+      conversation: {
+        id: "",
+        participants: [],
+        messages: [],
       },
     },
   });
