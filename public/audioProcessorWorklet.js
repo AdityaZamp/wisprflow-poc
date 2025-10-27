@@ -1,3 +1,4 @@
+//@eslint-disable
 class AudioProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
