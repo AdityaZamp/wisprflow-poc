@@ -1,6 +1,6 @@
 "use client";
 
-import RestApiRecorder from "@/components/RestApiRecorder";
+import RestApiRecorder from "@/components/rest-api/RestApiRecorder";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import WebSocketRecorder from "@/components/WebSocketRecorder";
+import WebSocketRecorder from "@/components/websocket/WebSocketRecorder";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { useRef, useState } from "react";
 import {
