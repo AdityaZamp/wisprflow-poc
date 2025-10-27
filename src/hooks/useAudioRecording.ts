@@ -356,6 +356,7 @@ export const useAudioRecording = (
 
     updateState({
       isRecording: false,
+      isAuthenticated: false, // Reset authentication state
       status: "Stopped streaming",
       mediaStream: null,
     });

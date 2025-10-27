@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { cn } from "@/lib/utils";
-import { Check, Mic, Square, X } from "lucide-react";
+import { Check, Loader2, Mic, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import ConfigModal from "./ConfigModal";
@@ -195,8 +195,8 @@ const WebSocketRecorder = () => {
     setIsRecording(true);
     setCurrentText("");
 
-    toast.info("Recording started", {
-      description: "Speak into your microphone",
+    toast.info("Connecting...", {
+      description: "Authenticating your session",
       duration: 2000,
       style: {
         background: "#1a1a1a",
@@ -272,6 +272,8 @@ const WebSocketRecorder = () => {
     }
   };
 
+  console.log("isAuthenticated", state.isAuthenticated);
+
   return (
     <div className="h-full bg-[#212121] flex flex-col">
       {/* Chat Messages */}
@@ -316,8 +318,14 @@ const WebSocketRecorder = () => {
               >
                 {isRecording ? (
                   <div className="flex items-center justify-between w-full">
-                    {/* Dynamic Waveform */}
-                    <Waveform volume={state.volume} />
+                    {/* Show loader while authenticating, waveform after */}
+                    {!state.isAuthenticated ? (
+                      <div className="flex items-center gap-2 flex-1 text-white ml-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      <Waveform volume={state.volume} />
+                    )}
 
                     <TooltipProvider>
                       <Tooltip>
