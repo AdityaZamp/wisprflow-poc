@@ -1,4 +1,5 @@
 "use client";
+import AudioVisualizer from "@/components/ui/audio-visualizer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,76 +21,6 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-// 🔊 Waveform Component
-const Waveform = ({ volume }: { volume: number }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [barCount, setBarCount] = useState(20);
-  const [animationTime, setAnimationTime] = useState(0);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        // Each bar ~6px wide (4px bar + 2px gap)
-        const count = Math.floor(width / 6);
-        setBarCount(count > 10 ? count : 10); // at least 10 bars
-      }
-    });
-
-    resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  // Animation loop for smooth waveform
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimationTime(Date.now() * 0.01);
-    }, 50); // Update every 50ms for smooth animation
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      className="flex-1 flex items-center justify-between px-2"
-    >
-      {Array.from({ length: barCount }, (_, i) => {
-        const baseHeight = 4;
-        const maxHeight = 20;
-        const volumeMultiplier = Math.min(volume * 50, 1); // scale 0–1
-
-        // If no volume detected, show a subtle static pattern
-        const wavePattern =
-          volume > 0
-            ? Math.sin((animationTime + i * 0.5) % (Math.PI * 2))
-            : Math.sin(i * 0.3) * 0.3; // Static pattern when no audio
-
-        const height = Math.max(
-          baseHeight,
-          baseHeight +
-            (maxHeight - baseHeight) *
-              Math.max(volumeMultiplier, 0.1) *
-              Math.abs(wavePattern)
-        );
-
-        return (
-          <div
-            key={i}
-            className="flex-1 mx-[1px] bg-white rounded-full transition-all duration-75 ease-out"
-            style={{
-              height: `${height}px`,
-              opacity: volume > 0 ? 0.7 + volumeMultiplier * 0.3 : 0.4,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-};
-
 function ElevenLabsRecorder() {
   const [committedTranscripts, setCommittedTranscripts] = useState<
     Array<{ id: string; text: string }>
@@ -97,14 +28,10 @@ function ElevenLabsRecorder() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentText, setCurrentText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [volume, setVolume] = useState(0);
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState<string | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   const scribe = useScribe({
     modelId: "scribe_v2_realtime",
@@ -132,7 +59,57 @@ function ElevenLabsRecorder() {
           : "An error occurred";
       setError(errorMessage);
       setStatus("Error");
+      setIsRecording(false);
+      setMediaStream(null);
+      scribe.disconnect();
       toast.error("Recording Error", {
+        description: errorMessage,
+        duration: 6000,
+        style: {
+          background: "#1a1a1a",
+          border: "1px solid #ef4444",
+          color: "#ffffff",
+        },
+      });
+    },
+    onAuthError: (error) => {
+      console.error("Scribe error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : "An error occurred";
+      setError(errorMessage);
+      setStatus("Error");
+      setIsRecording(false);
+      setMediaStream(null);
+      scribe.disconnect();
+      toast.error("Authentication Error", {
+        description: errorMessage,
+        duration: 6000,
+        style: {
+          background: "#1a1a1a",
+          border: "1px solid #ef4444",
+          color: "#ffffff",
+        },
+      });
+    },
+    onQuotaExceededError: (error) => {
+      console.error("Scribe error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : "An error occurred";
+      setError(errorMessage);
+      setStatus("Error");
+      setIsRecording(false);
+      setMediaStream(null);
+      scribe.disconnect();
+      console.log("Quota exceeded error:", error);
+      toast.error("Quota Exceeded Error", {
         description: errorMessage,
         duration: 6000,
         style: {
@@ -144,69 +121,20 @@ function ElevenLabsRecorder() {
     },
   });
 
-  // Setup audio context and analyser for volume monitoring
-  const setupAudioContext = (stream: MediaStream) => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-    }
-
-    const audioContext = new AudioContext();
-    const analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(stream);
-
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
-    source.connect(analyser);
-
-    audioContextRef.current = audioContext;
-    analyserRef.current = analyser;
-    mediaStreamRef.current = stream;
-
-    // Start volume monitoring
-    const monitorVolume = () => {
-      if (!analyserRef.current || !isRecording) return;
-
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      analyserRef.current.getByteFrequencyData(dataArray);
-
-      const average =
-        dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-      setVolume(average / 255);
-
-      if (isRecording) {
-        animationFrameRef.current = requestAnimationFrame(monitorVolume);
-      }
-    };
-
-    monitorVolume();
-  };
-
-  // Cleanup audio context
+  // Cleanup media stream on unmount
   useEffect(() => {
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [mediaStream]);
 
+  // Update current text from committed transcripts only
   useEffect(() => {
-    // Update current text with partial transcript while recording
-    if (isRecording && scribe.partialTranscript) {
-      // Combine committed transcripts with current partial
-      const committedText = committedTranscripts.map((t) => t.text).join(" ");
-      const fullText = committedText
-        ? `${committedText} ${scribe.partialTranscript}`
-        : scribe.partialTranscript;
-      setCurrentText(fullText.trim());
-    }
-  }, [scribe.partialTranscript, isRecording, committedTranscripts]);
+    const committedText = committedTranscripts.map((t) => t.text).join(" ");
+    setCurrentText(committedText);
+  }, [committedTranscripts]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -251,7 +179,12 @@ function ElevenLabsRecorder() {
         },
       });
 
-      // Get the microphone stream for volume monitoring
+      setIsRecording(true);
+      setStatus("Recording");
+
+      // Get the microphone stream for volume monitoring after connection
+      // Note: This creates a separate stream for volume monitoring
+      // since ElevenLabs manages its own stream internally
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -260,13 +193,15 @@ function ElevenLabsRecorder() {
             autoGainControl: true,
           },
         });
-        setupAudioContext(stream);
+        console.log("Microphone stream obtained for volume monitoring");
+        setMediaStream(stream);
       } catch (err) {
-        console.warn("Could not access microphone for volume monitoring:", err);
+        console.error(
+          "Could not access microphone for volume monitoring:",
+          err
+        );
+        // Don't fail the recording if volume monitoring fails
       }
-
-      setIsRecording(true);
-      setStatus("Recording");
 
       toast.info("Connecting...", {
         description: "Authenticating your session",
@@ -302,25 +237,19 @@ function ElevenLabsRecorder() {
         console.log("Committing current transcript:", scribe.partialTranscript);
         await scribe.commit();
         // Wait a bit for the commit callback to fire
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
       // Then disconnect
       scribe.disconnect();
 
-      // Stop volume monitoring
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      // Stop media stream
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        setMediaStream(null);
       }
 
       setIsRecording(false);
       setStatus("Ready");
-      setVolume(0);
 
       toast.info("Recording stopped", {
         description: "Processing audio...",
@@ -335,9 +264,13 @@ function ElevenLabsRecorder() {
       console.error("Error during stop and commit:", err);
       // Still disconnect even if commit fails
       scribe.disconnect();
+      // Stop media stream
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        setMediaStream(null);
+      }
       setIsRecording(false);
       setStatus("Ready");
-      setVolume(0);
     }
   };
 
@@ -449,7 +382,7 @@ function ElevenLabsRecorder() {
                         <Loader2 className="h-4 w-4 animate-spin" />
                       </div>
                     ) : (
-                      <Waveform volume={volume} />
+                      <AudioVisualizer stream={mediaStream} />
                     )}
 
                     <TooltipProvider>
@@ -515,7 +448,6 @@ function ElevenLabsRecorder() {
                           variant="ghost"
                           size="icon"
                           onClick={handleStartRecording}
-                          disabled={error !== null}
                           className="text-white hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-full cursor-pointer"
                         >
                           <Mic size={16} />
