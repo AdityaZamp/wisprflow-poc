@@ -293,7 +293,7 @@ const WebSocketRecorder = () => {
       {/* Input Area */}
       <div className="p-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto">
-          <div className="relative bg-[#303030] rounded-full shadow-sm">
+          <div className="relative bg-[#303030] rounded-lg shadow-sm overflow-hidden">
             <div className="flex items-center p-3 gap-x-2">
               {!isRecording && (
                 <div className="flex-1 min-h-[40px] max-h-[200px] overflow-y-auto ml-3">
