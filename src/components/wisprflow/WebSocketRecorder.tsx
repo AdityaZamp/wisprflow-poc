@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAudioRecording } from "@/hooks/useAudioRecording";
+import { useWisprflowRecording } from "@/hooks/useWisprflowRecording";
 import { cn } from "@/lib/utils";
 import { Check, Loader2, Mic, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -156,7 +156,7 @@ const WebSocketRecorder = () => {
     stopRecording,
     acceptRecording,
     rejectRecording,
-  } = useAudioRecording(wsConfig);
+  } = useWisprflowRecording(wsConfig);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentText, setCurrentText] = useState("");

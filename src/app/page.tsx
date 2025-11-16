@@ -1,6 +1,6 @@
 "use client";
 
-import RestApiRecorder from "@/components/rest-api/RestApiRecorder";
+import ElevenLabsRecorder from "@/components/elevenlabs/ElevenLabsRecorder";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import WebSocketRecorder from "@/components/websocket/WebSocketRecorder";
+import WebSocketRecorder from "@/components/wisprflow/WebSocketRecorder";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { useRef, useState } from "react";
 import {
@@ -75,7 +75,7 @@ export default function Home() {
         <div className="bg-[#1a1a1a] border-b border-[#333] px-4 py-2 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h1 className="text-white text-lg font-semibold">
-              WisprFlow Speech to Text POC
+              Speech to Text POC - WisprFlow vs ElevenLabs
             </h1>
             <div className="flex items-center space-x-2">
               <Tooltip>
@@ -91,14 +91,14 @@ export default function Home() {
                     ) : (
                       <ChevronLeft size={16} />
                     )}
-                    WebSocket
+                    WisprFlow
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
                     {leftCollapsed || rightCollapsed
                       ? "Restore both panels"
-                      : "Focus on WebSocket panel"}
+                      : "Focus on WisprFlow panel"}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -115,14 +115,14 @@ export default function Home() {
                     ) : (
                       <ChevronRight size={16} />
                     )}
-                    REST API
+                    ElevenLabs
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
                     {leftCollapsed || rightCollapsed
                       ? "Restore both panels"
-                      : "Focus on REST API panel"}
+                      : "Focus on ElevenLabs panel"}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -133,7 +133,7 @@ export default function Home() {
         {/* Resizable Panels */}
         <div className="flex-1 min-h-0">
           <PanelGroup direction="horizontal">
-            {/* WebSocket Panel */}
+            {/* WisprFlow WebSocket Panel */}
             <Panel
               ref={leftPanelRef}
               defaultSize={50}
@@ -142,12 +142,12 @@ export default function Home() {
               collapsedSize={0}
             >
               <div className="h-full flex flex-col">
-                {/* WebSocket Panel Header */}
+                {/* WisprFlow Panel Header */}
                 <div className="bg-[#2a2a2a] border-b border-[#333] px-4 py-2 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                     <h2 className="text-white font-medium">
-                      WebSocket Approach
+                      WisprFlow WebSocket
                     </h2>
                   </div>
                   <Tooltip>
@@ -169,13 +169,13 @@ export default function Home() {
                       <p>
                         {leftCollapsed || rightCollapsed
                           ? "Restore both panels"
-                          : "Focus on WebSocket panel"}
+                          : "Focus on WisprFlow panel"}
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
 
-                {/* WebSocket Content */}
+                {/* WisprFlow Content */}
                 <div className="flex-1 min-h-0">
                   <WebSocketRecorder />
                 </div>
@@ -184,7 +184,7 @@ export default function Home() {
 
             <PanelResizeHandle className="w-1 bg-[#333] hover:bg-[#555] transition-colors" />
 
-            {/* REST API Panel */}
+            {/* ElevenLabs Panel */}
             <Panel
               ref={rightPanelRef}
               defaultSize={50}
@@ -193,12 +193,12 @@ export default function Home() {
               collapsedSize={0}
             >
               <div className="h-full flex flex-col">
-                {/* REST API Panel Header */}
+                {/* ElevenLabs Panel Header */}
                 <div className="bg-[#2a2a2a] border-b border-[#333] px-4 py-2 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                     <h2 className="text-white font-medium">
-                      REST API Approach
+                      ElevenLabs Scribe v2
                     </h2>
                   </div>
                   <Tooltip>
@@ -220,15 +220,15 @@ export default function Home() {
                       <p>
                         {leftCollapsed || rightCollapsed
                           ? "Restore both panels"
-                          : "Focus on REST API panel"}
+                          : "Focus on ElevenLabs panel"}
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
 
-                {/* REST API Content */}
+                {/* ElevenLabs Content */}
                 <div className="flex-1 min-h-0">
-                  <RestApiRecorder />
+                  <ElevenLabsRecorder />
                 </div>
               </div>
             </Panel>

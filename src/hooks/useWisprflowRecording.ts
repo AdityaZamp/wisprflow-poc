@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-interface AudioRecordingState {
+interface WisprflowRecordingState {
   isRecording: boolean;
   isConnected: boolean;
   isAuthenticated: boolean;
@@ -43,8 +43,8 @@ interface WebSocketConfig {
   };
 }
 
-interface AudioRecordingHook {
-  state: AudioRecordingState;
+interface WisprflowRecordingHook {
+  state: WisprflowRecordingState;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   acceptRecording: () => void;
@@ -56,10 +56,10 @@ const RECORDING_SAMPLE_RATE = 48000;
 const TARGET_SAMPLE_RATE = 16000;
 const PACKET_DURATION = BUFFER_SIZE / RECORDING_SAMPLE_RATE;
 
-export const useAudioRecording = (
+export const useWisprflowRecording = (
   wsConfig: WebSocketConfig
-): AudioRecordingHook => {
-  const [state, setState] = useState<AudioRecordingState>({
+): WisprflowRecordingHook => {
+  const [state, setState] = useState<WisprflowRecordingState>({
     isRecording: false,
     isConnected: false,
     isAuthenticated: false,
@@ -77,9 +77,12 @@ export const useAudioRecording = (
   const packetPositionRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const updateState = useCallback((updates: Partial<AudioRecordingState>) => {
-    setState((prev) => ({ ...prev, ...updates }));
-  }, []);
+  const updateState = useCallback(
+    (updates: Partial<WisprflowRecordingState>) => {
+      setState((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
 
   const resampleAudio = useCallback(
     async (
